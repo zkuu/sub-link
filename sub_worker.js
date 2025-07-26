@@ -3,9 +3,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
-    const kv = env.SUB_LINK;
-    const PASSWORD = env.ACCESS_PASSWORD || "admin123"; // 默认密码
-
+    const kv = env.KV;
+    const PASSWORD = env.ACCESS_PASSWORD || "zku888"; // 默认密码
     // 验证密码
     const isAuthenticated = await checkAuth(request, PASSWORD);
     
@@ -25,7 +24,6 @@ export default {
       // 重定向到登录页，不带错误信息
       return Response.redirect(new URL('/login', request.url), 302);
     }
-
     // 主页面
     if (path === '/' && request.method === 'GET') {
       return mainHandler(kv);
@@ -49,7 +47,6 @@ export default {
     return new Response('Not Found', { status: 404 });
   }
 };
-
 // 验证身份
 async function checkAuth(request, password) {
   // 从cookie中获取token
@@ -63,19 +60,20 @@ async function checkAuth(request, password) {
   
   return false;
 }
-
 // 显示登录页面 (添加错误处理)
 function showLoginPage(error = null) {
   const errorMessage = error ? 
     `<div class="error-message">哎呦~想白嫖？</div>` : 
     '';
     
+  // 在登录容器后添加页脚
   const html = `
   <!DOCTYPE html>
   <html>
   <head>
     <title>登录</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root {
         --primary: #4361ee;
@@ -215,20 +213,52 @@ function showLoginPage(error = null) {
         width: auto;
         padding: 0;
       }
-      
-      /* 页脚样式 */
-      .footer {
-        position: absolute;
-        bottom: 20px;
+	  
+      .login-footer {
+        position: fixed;
+        bottom: 0;
         width: 100%;
         text-align: center;
+        padding: 15px;
         color: #6c757d;
-        font-size: 0.85rem;
-        padding: 0 20px;
+        font-size: 0.9rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
       }
       
-      .footer p {
+      .login-footer p {
         margin: 5px 0;
+        line-height: 1.6;
+      }
+      
+      .login-footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 10px;
+      }
+      
+      .login-footer-links a {
+        color: #4361ee;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      
+      .login-footer-links a:hover {
+        text-decoration: underline;
+      }
+      
+      @media (max-width: 480px) {
+        .login-footer {
+          padding: 10px;
+          font-size: 0.8rem;
+        }
+        
+        .login-footer-links {
+          flex-direction: column;
+          gap: 5px;
+        }
       }
     </style>
   </head>
@@ -239,14 +269,11 @@ function showLoginPage(error = null) {
       ${errorMessage}
       <form id="loginForm" method="POST" action="/login">
         <div class="form-group">
-          <label for="password">访问密码</label>
+          <label for="password">请输入神秘代码</label>
           <div class="password-container">
             <input type="password" id="password" name="password" required ${error ? 'class="error"' : ''}>
             <button type="button" class="toggle-password" id="togglePassword">
-              <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-              </svg>
+              <i class="fas fa-eye"></i>
             </button>
           </div>
         </div>
@@ -254,11 +281,16 @@ function showLoginPage(error = null) {
       </form>
       <div class="message">默认密码: admin123</div>
     </div>
-    
-    <div class="footer">
-      <p>© ${new Date().getFullYear()} 订阅管理器 | 由Cloudflare Workers提供支持</p>
-      <p>数据存储在Cloudflare KV中 | 安全加密访问</p>
-    </div>
+	
+	<!-- 新增的页脚 -->
+    <footer class="login-footer">
+      <p>© ${new Date().getFullYear()} 订阅管理器 | 安全访问您的链接收藏</p>
+      <p>由Cloudflare Workers提供边缘计算服务</p>
+      <div class="login-footer-links">
+        <a href="/">首页</a>
+        <a href="https://workers.cloudflare.com" target="_blank">关于Cloudflare Workers</a>
+      </div>
+    </footer>
     
     <script>
       // 密码可见性切换
@@ -271,9 +303,9 @@ function showLoginPage(error = null) {
         
         // 更新图标
         if (type === 'text') {
-          this.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/><path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/></svg>';
+          this.innerHTML = '<i class="fas fa-eye-slash"></i>';
         } else {
-          this.innerHTML = '<svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>';
+          this.innerHTML = '<i class="fas fa-eye"></i>';
         }
       });
       
@@ -283,7 +315,7 @@ function showLoginPage(error = null) {
       
       loginForm.addEventListener('submit', function() {
         loginBtn.disabled = true;
-        loginBtn.textContent = '登录中...';
+        loginBtn.innerHTML = '登录中...';
       });
     </script>
   </body>
@@ -294,7 +326,6 @@ function showLoginPage(error = null) {
     headers: { 'Content-Type': 'text/html; charset=UTF-8' }
   });
 }
-
 // 处理登录
 async function handleLogin(request, password) {
   try {
@@ -323,7 +354,6 @@ async function handleLogin(request, password) {
     return Response.redirect(url, 302);
   }
 }
-
 // 处理退出
 function handleLogout() {
   const headers = new Headers();
@@ -334,7 +364,6 @@ function handleLogout() {
     headers
   });
 }
-
 // 主页面处理器
 async function mainHandler(kv) {
   const data = await kv.get('link_data');
@@ -342,14 +371,14 @@ async function mainHandler(kv) {
   
   // 定义分组颜色方案
   const groupColors = [
-    { bg: 'linear-gradient(120deg, #4361ee, #4895ef)', btn: '#4361ee' }, // 蓝色
-    { bg: 'linear-gradient(120deg, #3a0ca3, #7209b7)', btn: '#3a0ca3' }, // 紫色
-    { bg: 'linear-gradient(120deg, #f72585, #b5179e)', btn: '#f72585' }, // 粉色
-    { bg: 'linear-gradient(120deg, #4cc9f0, #4895ef)', btn: '#4cc9f0' }, // 青色
-    { bg: 'linear-gradient(120deg, #2a9d8f, #2e9e49)', btn: '#2a9d8f' }, // 绿色
-    { bg: 'linear-gradient(120deg, #f77f00, #e63946)', btn: '#f77f00' }, // 橙色
-    { bg: 'linear-gradient(120deg, #9d4edd, #5a189a)', btn: '#9d4edd' }, // 深紫
-    { bg: 'linear-gradient(120deg, #00bbf9, #00f5d4)', btn: '#00bbf9' }  // 蓝绿
+    '#4361ee', // 蓝色
+    '#7209b7', // 紫色
+    '#f72585', // 粉色
+    '#4cc9f0', // 青色
+    '#2a9d8f', // 绿色
+    '#f77f00', // 橙色
+    '#9d4edd', // 深紫
+    '#00bbf9'  // 蓝绿
   ];
   
   const html = `
@@ -358,7 +387,8 @@ async function mainHandler(kv) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的链接收藏</title>
+    <title>订阅链接</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root {
         --primary: #4361ee;
@@ -387,7 +417,7 @@ async function mainHandler(kv) {
         padding: 0;
         min-height: 100vh;
         position: relative;
-        padding-bottom: 80px; /* 为页脚留出空间 */
+        padding-bottom: 80px;
       }
       
       .container {
@@ -473,16 +503,6 @@ async function mainHandler(kv) {
       .group-header {
         color: white;
         padding: 15px 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      
-      .group-color-indicator {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       }
       
       .group-title {
@@ -506,6 +526,7 @@ async function mainHandler(kv) {
         display: flex;
         transition: all 0.3s;
         position: relative;
+        align-items: center;
       }
       
       .link-card:hover {
@@ -516,6 +537,7 @@ async function mainHandler(kv) {
       .link-info {
         flex-grow: 1;
         overflow: hidden;
+        min-width: 0;
       }
       
       .link-name {
@@ -534,28 +556,56 @@ async function mainHandler(kv) {
         word-break: break-all;
       }
       
-      .copy-btn {
+      .link-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        margin-left: 10px;
+      }
+      
+      .action-btn {
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 8px 12px;
+        padding: 0;
         cursor: pointer;
-        align-self: center;
         transition: all 0.3s;
         display: flex;
         align-items: center;
-        gap: 5px;
-        min-width: 80px;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
         position: relative;
       }
       
-      .copy-btn:hover {
+      .action-btn i {
+        font-size: 18px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.3s;
+      }
+      
+      .action-btn:hover {
         filter: brightness(0.9);
         transform: translateY(-2px);
       }
       
-      .copy-btn:active {
-        transform: translateY(1px);
+      .copy-success {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      
+      .action-btn.copied .copy-icon {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      
+      .action-btn.copied .copy-success {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
       }
       
       .empty-state {
@@ -584,7 +634,90 @@ async function mainHandler(kv) {
         transform: translateY(-2px);
       }
       
-      /* 页脚样式 */
+      /* 二维码模态框 */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        text-align: center;
+        width: 300px;
+        max-width: 90%;
+        max-height: 90%;
+        overflow: auto;
+        position: relative;
+      }
+      
+      .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+      }
+      
+      .qr-code-container {
+        margin: 20px 0;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+        display: inline-block;
+      }
+      
+      .qr-title {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        color: var(--dark);
+      }
+      
+      .qr-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      
+      .qr-btn {
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .qr-btn-download {
+        background: #4361ee;
+        color: white;
+      }
+      
+      .qr-btn-close {
+        background: #e9ecef;
+        color: #495057;
+      }
+      
+      #qrCodeCanvas {
+        width: 200px;
+        height: 200px;
+        display: block;
+        margin: 0 auto;
+      }
+      
       .footer {
         position: absolute;
         bottom: 0;
@@ -624,7 +757,6 @@ async function mainHandler(kv) {
         text-decoration: underline;
       }
       
-      /* 移动端优化 */
       @media (max-width: 768px) {
         .header-content {
           flex-direction: column;
@@ -639,16 +771,6 @@ async function mainHandler(kv) {
         
         .groups-container {
           grid-template-columns: 1fr;
-        }
-        
-        .link-card {
-          flex-direction: column;
-          gap: 15px;
-        }
-        
-        .copy-btn {
-          width: 100%;
-          justify-content: center;
         }
         
         .footer {
@@ -667,6 +789,15 @@ async function mainHandler(kv) {
           font-size: 0.9rem;
         }
         
+        .action-btn {
+          width: 36px;
+          height: 36px;
+        }
+        
+        .action-btn i {
+          font-size: 16px;
+        }
+        
         .footer {
           padding: 15px;
           font-size: 0.8rem;
@@ -682,20 +813,14 @@ async function mainHandler(kv) {
   <body>
     <header>
       <div class="header-content">
-        <h1>🔗 我的链接收藏</h1>
+        <h1><i class="fas fa-bookmark"></i> 订阅链接</h1>
         <div class="actions">
           <button class="btn btn-admin" onclick="location.href='/admin'">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-            </svg>
+            <i class="fas fa-edit"></i>
             管理链接
           </button>
           <button class="btn btn-logout" onclick="location.href='/logout'">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
-              <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-            </svg>
+            <i class="fas fa-sign-out-alt"></i>
             退出
           </button>
         </div>
@@ -706,13 +831,11 @@ async function mainHandler(kv) {
       ${links.groups.length > 0 ? `
         <div class="groups-container">
           ${links.groups.map((group, gIndex) => {
-            // 为每个分组分配一个颜色
             const colorIndex = gIndex % groupColors.length;
-            const colorScheme = groupColors[colorIndex];
+            const groupColor = groupColors[colorIndex];
             return `
             <div class="group">
-              <div class="group-header" style="background: ${colorScheme.bg}">
-                <div class="group-color-indicator" style="background: ${colorScheme.btn}"></div>
+              <div class="group-header" style="background: ${groupColor}">
                 <h2 class="group-title">${group.name}</h2>
               </div>
               <div class="links">
@@ -722,55 +845,161 @@ async function mainHandler(kv) {
                       <h3 class="link-name">${link.name}</h3>
                       <div class="link-url">${link.url}</div>
                     </div>
-                    <button class="copy-btn" data-url="${link.url}" style="background: ${colorScheme.btn}">
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-                        <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
-                      </svg>
-                      复制
-                    </button>
+                    <div class="link-actions">
+                      <button class="action-btn copy-btn" data-url="${link.url}" style="background: ${groupColor}" title="复制链接">
+                        <i class="fas fa-copy copy-icon"></i>
+                        <i class="fas fa-check copy-success"></i>
+                      </button>
+                      <button class="action-btn qr-btn" data-url="${link.url}" data-name="${link.name}" style="background: ${groupColor}" title="生成二维码">
+                        <i class="fas fa-qrcode"></i>
+                      </button>
+                    </div>
                   </div>
                 `).join('')}
               </div>
             </div>
-          `}).join('')}
+            `;
+          }).join('')}
         </div>
       ` : `
         <div class="empty-state">
-          <h2>📋 您还没有添加任何链接</h2>
+          <h2><i class="fas fa-bookmark"></i> 您还没有添加任何链接</h2>
           <p>开始创建您的第一个链接收藏吧</p>
           <button class="empty-btn" onclick="location.href='/admin'">添加链接</button>
         </div>
       `}
     </div>
     
+    <!-- 二维码模态框 -->
+    <div class="modal" id="qrModal">
+      <div class="modal-content">
+        <span class="close-modal" id="closeModal">&times;</span>
+        <h3 class="qr-title" id="qrTitle">链接二维码</h3>
+        <div class="qr-code-container">
+          <canvas id="qrCodeCanvas" width="200" height="200"></canvas>
+        </div>
+        <div class="qr-buttons">
+          <button class="qr-btn qr-btn-download" id="downloadQR">
+            <i class="fas fa-download"></i> 下载二维码
+          </button>
+          <button class="qr-btn qr-btn-close" id="closeQRModal">
+            <i class="fas fa-times"></i> 关闭
+          </button>
+        </div>
+      </div>
+    </div>
+    
     <footer class="footer">
       <div class="footer-content">
-        <p>© ${new Date().getFullYear()} 链接管理器 | 由Cloudflare Workers提供边缘计算服务</p>
-        <p>数据存储在Cloudflare KV中，安全持久 | 每个分组使用不同颜色便于区分</p>
-        <p>提示：复制按钮颜色与分组颜色一致，便于识别所属分组</p>
+        <p>© ${new Date().getFullYear()} 订阅管理器 | 由Cloudflare Workers提供边缘计算服务</p>
+        <p>优化：统一按钮尺寸 | 分组颜色标识 | 二维码功能增强</p>
         <div class="footer-links">
           <a href="/admin">管理链接</a>
           <a href="/logout">退出登录</a>
-          <a href="#" onclick="alert('如需更改密码，请设置ACCESS_PASSWORD环境变量')">密码设置</a>
         </div>
       </div>
     </footer>
     
+    <!-- 引入QRCode生成库 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    
     <script>
       // 复制功能
       document.addEventListener('click', e => {
-        if (e.target.classList.contains('copy-btn')) {
-          navigator.clipboard.writeText(e.target.dataset.url)
+        if (e.target.closest('.copy-btn')) {
+          const btn = e.target.closest('.copy-btn');
+          navigator.clipboard.writeText(btn.dataset.url)
             .then(() => {
-              const originalText = e.target.innerHTML;
-              e.target.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg> 已复制';
+              btn.classList.add('copied');
+              btn.title = '已复制!';
               
               setTimeout(() => {
-                e.target.innerHTML = originalText;
+                btn.classList.remove('copied');
+                btn.title = '复制链接';
               }, 2000);
             })
             .catch(err => alert('复制失败: ' + err));
+        }
+      });
+      
+      // 二维码功能
+      const modal = document.getElementById('qrModal');
+      const closeModal = document.getElementById('closeModal');
+      const closeQRModal = document.getElementById('closeQRModal');
+      const qrTitle = document.getElementById('qrTitle');
+      const qrCodeCanvas = document.getElementById('qrCodeCanvas');
+      const downloadQR = document.getElementById('downloadQR');
+      
+      // 打开二维码模态框
+      document.addEventListener('click', e => {
+        if (e.target.closest('.qr-btn')) {
+          const btn = e.target.closest('.qr-btn');
+          let url = btn.dataset.url;
+          const name = btn.dataset.name;
+          
+          // 确保URL有协议前缀
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+          }
+          
+          qrTitle.textContent = name + " - 二维码";
+          
+          // 清除之前的二维码
+          const ctx = qrCodeCanvas.getContext('2d');
+          ctx.clearRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+          
+          // 生成新二维码
+          try {
+            QRCode.toCanvas(qrCodeCanvas, url, {
+              width: 200,
+              margin: 1,
+              color: {
+                dark: '#000',
+                light: '#fff'
+              }
+            }, function (error) {
+              if (error) {
+                console.error('生成二维码失败:', error);
+                alert('生成二维码失败，请重试');
+              } else {
+                modal.style.display = 'flex';
+              }
+            });
+          } catch (error) {
+            console.error('生成二维码失败:', error);
+            alert('生成二维码失败，请重试');
+          }
+        }
+      });
+      
+      // 关闭模态框
+      closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+      
+      closeQRModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+      
+      // 点击模态框外部关闭
+      window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+      
+      // 下载二维码
+      downloadQR.addEventListener('click', () => {
+        try {
+          const link = document.createElement('a');
+          link.download = 'qrcode.png';
+          link.href = qrCodeCanvas.toDataURL('image/png');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          console.error('下载二维码失败:', error);
+          alert('下载二维码失败');
         }
       });
     </script>
@@ -782,7 +1011,6 @@ async function mainHandler(kv) {
     headers: { 'Content-Type': 'text/html; charset=UTF-8' }
   });
 }
-
 // 管理页面处理器
 async function adminHandler(kv) {
   const data = await kv.get('link_data');
@@ -790,14 +1018,14 @@ async function adminHandler(kv) {
   
   // 定义分组颜色方案
   const groupColors = [
-    { bg: 'linear-gradient(120deg, #4361ee, #4895ef)', btn: '#4361ee' }, // 蓝色
-    { bg: 'linear-gradient(120deg, #3a0ca3, #7209b7)', btn: '#3a0ca3' }, // 紫色
-    { bg: 'linear-gradient(120deg, #f72585, #b5179e)', btn: '#f72585' }, // 粉色
-    { bg: 'linear-gradient(120deg, #4cc9f0, #4895ef)', btn: '#4cc9f0' }, // 青色
-    { bg: 'linear-gradient(120deg, #2a9d8f, #2e9e49)', btn: '#2a9d8f' }, // 绿色
-    { bg: 'linear-gradient(120deg, #f77f00, #e63946)', btn: '#f77f00' }, // 橙色
-    { bg: 'linear-gradient(120deg, #9d4edd, #5a189a)', btn: '#9d4edd' }, // 深紫
-    { bg: 'linear-gradient(120deg, #00bbf9, #00f5d4)', btn: '#00bbf9' }  // 蓝绿
+    '#4361ee', // 蓝色
+    '#7209b7', // 紫色
+    '#f72585', // 粉色
+    '#4cc9f0', // 青色
+    '#2a9d8f', // 绿色
+    '#f77f00', // 橙色
+    '#9d4edd', // 深紫
+    '#00bbf9'  // 蓝绿
   ];
   
   const html = `
@@ -807,6 +1035,7 @@ async function adminHandler(kv) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>链接管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root {
         --primary: #4361ee;
@@ -835,7 +1064,7 @@ async function adminHandler(kv) {
         padding: 0;
         min-height: 100vh;
         position: relative;
-        padding-bottom: 80px; /* 为页脚留出空间 */
+        padding-bottom: 80px;
       }
       
       .container {
@@ -955,16 +1184,6 @@ async function adminHandler(kv) {
       .group-title {
         font-size: 1.3rem;
         font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      
-      .color-indicator {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       }
       
       .delete-btn {
@@ -1039,7 +1258,6 @@ async function adminHandler(kv) {
         margin-top: 30px;
       }
       
-      /* 添加分组按钮固定 */
       .add-group-btn {
         position: sticky;
         bottom: 30px;
@@ -1050,7 +1268,6 @@ async function adminHandler(kv) {
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
       }
       
-      /* 页脚样式 */
       .footer {
         position: absolute;
         bottom: 0;
@@ -1090,7 +1307,6 @@ async function adminHandler(kv) {
         text-decoration: underline;
       }
       
-      /* 移动端优化 */
       @media (max-width: 768px) {
         .header-content {
           flex-direction: column;
@@ -1158,19 +1374,14 @@ async function adminHandler(kv) {
   <body>
     <header>
       <div class="header-content">
-        <h1>⚙️ 链接管理</h1>
+        <h1><i class="fas fa-cog"></i> 链接管理</h1>
         <div class="actions">
           <button class="btn btn-back" onclick="location.href='/'">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-            </svg>
+            <i class="fas fa-arrow-left"></i>
             返回首页
           </button>
           <button class="btn btn-logout" onclick="location.href='/logout'">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
-              <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-            </svg>
+            <i class="fas fa-sign-out-alt"></i>
             退出
           </button>
         </div>
@@ -1182,17 +1393,15 @@ async function adminHandler(kv) {
         <form id="linkForm">
           <div id="groups">
             ${links.groups.map((group, gIndex) => {
-              // 为每个分组分配一个颜色
               const colorIndex = gIndex % groupColors.length;
-              const colorScheme = groupColors[colorIndex];
+              const groupColor = groupColors[colorIndex];
               return `
-              <div class="group-card" data-index="${gIndex}">
-                <div class="group-header" style="background: ${colorScheme.bg}">
-                  <h3 class="group-title">
-                    <span class="color-indicator" style="background: ${colorScheme.btn}"></span>
-                    分组 #${gIndex + 1}: ${group.name}
-                  </h3>
-                  <button type="button" class="delete-btn" onclick="this.closest('.group-card').remove()">删除分组</button>
+              <div class="group-card">
+                <div class="group-header" style="background: ${groupColor}">
+                  <h3 class="group-title">分组 #${gIndex + 1}: ${group.name}</h3>
+                  <button type="button" class="delete-btn" onclick="this.closest('.group-card').remove()">
+                    <i class="fas fa-trash"></i> 删除分组
+                  </button>
                 </div>
                 
                 <div class="form-group">
@@ -1214,20 +1423,29 @@ async function adminHandler(kv) {
                         <input type="url" name="link-url-${gIndex}-${lIndex}" value="${link.url}" required>
                       </div>
                       <div class="link-actions">
-                        <button type="button" class="btn-secondary" onclick="this.closest('.link-item').remove()">删除链接</button>
+                        <button type="button" class="btn-secondary" onclick="this.closest('.link-item').remove()">
+                          <i class="fas fa-trash"></i> 删除链接
+                        </button>
                       </div>
                     </div>
                   `).join('')}
                 </div>
                 
-                <button type="button" class="btn-primary" onclick="addLink(${gIndex})" style="background: ${colorScheme.btn}">+ 添加链接</button>
+                <button type="button" class="btn-primary" onclick="addLink(${gIndex})" style="background: ${groupColor}">
+                  <i class="fas fa-plus"></i> 添加链接
+                </button>
               </div>
-            `}).join('')}
+              `;
+            }).join('')}
           </div>
           
           <div class="actions-bar">
-            <button type="button" class="btn-primary add-group-btn" onclick="addGroup()">+ 添加新分组</button>
-            <button type="submit" class="btn-primary" style="background-color: var(--accent);">💾 保存所有更改</button>
+            <button type="button" class="btn-primary add-group-btn" onclick="addGroup()">
+              <i class="fas fa-layer-group"></i> 添加新分组
+            </button>
+            <button type="submit" class="btn-primary" style="background-color: var(--accent);">
+              <i class="fas fa-save"></i> 保存所有更改
+            </button>
           </div>
         </form>
       </div>
@@ -1235,13 +1453,11 @@ async function adminHandler(kv) {
     
     <footer class="footer">
       <div class="footer-content">
-        <p>© ${new Date().getFullYear()} 链接管理器 | 数据存储在Cloudflare KV中</p>
+        <p>© ${new Date().getFullYear()} 订阅管理器 | 数据存储在Cloudflare KV中</p>
         <p>操作指南：1. 点击"添加分组"创建新分类 2. 在每个分组内添加链接 3. 点击"保存所有更改"应用修改</p>
-        <p>提示：复制按钮颜色与分组颜色一致，便于识别所属分组</p>
         <div class="footer-links">
           <a href="/">返回首页</a>
           <a href="/logout">退出登录</a>
-          <a href="#" onclick="alert('所有更改实时保存到Cloudflare KV，无需额外保存按钮')">数据安全说明</a>
         </div>
       </div>
     </footer>
@@ -1259,16 +1475,15 @@ async function adminHandler(kv) {
         
         // 为分组分配颜色
         const colorIndex = groupIndex % groupColors.length;
-        const colorScheme = groupColors[colorIndex];
+        const groupColor = groupColors[colorIndex];
         
         const groupHTML = \`
-        <div class="group-card" data-index="\${groupIndex}">
-          <div class="group-header" style="background: \${colorScheme.bg}">
-            <h3 class="group-title">
-              <span class="color-indicator" style="background: \${colorScheme.btn}"></span>
-              新分组
-            </h3>
-            <button type="button" class="delete-btn" onclick="this.closest('.group-card').remove()">删除分组</button>
+        <div class="group-card">
+          <div class="group-header" style="background: \${groupColor}">
+            <h3 class="group-title">新分组</h3>
+            <button type="button" class="delete-btn" onclick="this.closest('.group-card').remove()">
+              <i class="fas fa-trash"></i> 删除分组
+            </button>
           </div>
           
           <div class="form-group">
@@ -1280,13 +1495,15 @@ async function adminHandler(kv) {
           
           <div class="links" id="links-\${groupIndex}"></div>
           
-          <button type="button" class="btn-primary" onclick="addLink(\${groupIndex})" style="background: \${colorScheme.btn}">+ 添加链接</button>
+          <button type="button" class="btn-primary" onclick="addLink(\${groupIndex})" style="background: \${groupColor}">
+            <i class="fas fa-plus"></i> 添加链接
+          </button>
         </div>\`;
         
         document.getElementById('groups').insertAdjacentHTML('beforeend', groupHTML);
         
         // 滚动到新分组
-        const newGroup = document.querySelector(\`.group-card[data-index="\${groupIndex}"]\`);
+        const newGroup = document.querySelector('.group-card:last-child');
         newGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
       
@@ -1305,7 +1522,9 @@ async function adminHandler(kv) {
             <input type="url" name="link-url-\${groupIndex}-\${linkIndex}" required placeholder="https://example.com">
           </div>
           <div class="link-actions">
-            <button type="button" class="btn-secondary" onclick="this.closest('.link-item').remove()">删除链接</button>
+            <button type="button" class="btn-secondary" onclick="this.closest('.link-item').remove()">
+              <i class="fas fa-trash"></i> 删除链接
+            </button>
           </div>
         </div>\`;
         
@@ -1324,24 +1543,27 @@ async function adminHandler(kv) {
         
         // 收集所有分组
         document.querySelectorAll('.group-card').forEach(groupEl => {
-          const groupIndex = groupEl.dataset.index;
+          const groupIndex = Array.from(groupEl.parentNode.children).indexOf(groupEl);
           const groupName = groupEl.querySelector(\`input[name="group-name-\${groupIndex}"]\`)?.value;
           
           if (!groupName) return;
           
           const links = [];
           // 收集当前分组的所有链接
-          groupEl.querySelectorAll('.link-item').forEach(linkEl => {
-            const nameInput = linkEl.querySelector(\`input[name^="link-name-\${groupIndex}-"]\`);
-            const urlInput = linkEl.querySelector(\`input[name^="link-url-\${groupIndex}-"]\`);
-            
-            if (nameInput && urlInput && nameInput.value && urlInput.value) {
-              links.push({
-                name: nameInput.value,
-                url: urlInput.value
-              });
-            }
-          });
+          const linksContainer = groupEl.querySelector('.links');
+          if (linksContainer) {
+            linksContainer.querySelectorAll('.link-item').forEach(linkEl => {
+              const nameInput = linkEl.querySelector(\`input[name^="link-name-\${groupIndex}-"]\`);
+              const urlInput = linkEl.querySelector(\`input[name^="link-url-\${groupIndex}-"]\`);
+              
+              if (nameInput && urlInput && nameInput.value && urlInput.value) {
+                links.push({
+                  name: nameInput.value,
+                  url: urlInput.value
+                });
+              }
+            });
+          }
           
           if (groupName && links.length > 0) {
             groups.push({
@@ -1378,7 +1600,6 @@ async function adminHandler(kv) {
     headers: { 'Content-Type': 'text/html; charset=UTF-8' }
   });
 }
-
 // 保存处理器
 async function saveHandler(request, kv) {
   try {
