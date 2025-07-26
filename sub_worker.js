@@ -387,7 +387,7 @@ async function mainHandler(kv) {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订阅链接</title>
+    <title>订阅管理器</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root {
@@ -813,7 +813,7 @@ async function mainHandler(kv) {
   <body>
     <header>
       <div class="header-content">
-        <h1><i class="fas fa-bookmark"></i> 订阅链接</h1>
+        <h1><i class="fas fa-bookmark"></i> 订阅管理器</h1>
         <div class="actions">
           <button class="btn btn-admin" onclick="location.href='/admin'">
             <i class="fas fa-edit"></i>
