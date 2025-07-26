@@ -4,7 +4,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const kv = env.KV;
-    const PASSWORD = env.ACCESS_PASSWORD || "zku888"; // 默认密码
+    const PASSWORD = env.ACCESS_PASSWORD || "admin123"; // 默认密码
     // 验证密码
     const isAuthenticated = await checkAuth(request, PASSWORD);
     
