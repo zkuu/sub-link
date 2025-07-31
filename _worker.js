@@ -279,7 +279,9 @@ function showLoginPage(error = null) {
         </div>
         <button type="submit" id="loginBtn">登录</button>
       </form>
-      <div class="message">默认密码: admin123</div>
+      <div class="message">
+	<a href="https://t.me/zku1024">@zku1024</a>
+      </div>
     </div>
 	
 	<!-- 新增的页脚 -->
@@ -288,7 +290,7 @@ function showLoginPage(error = null) {
       <p>由Cloudflare Workers提供边缘计算服务</p>
       <div class="login-footer-links">
         <a href="/">首页</a>
-        <a href="https://workers.cloudflare.com" target="_blank">关于Cloudflare Workers</a>
+        <a href="https://github.com/zkuu/sub-link" target="_blank">Github</a>
       </div>
     </footer>
     
